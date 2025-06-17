@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Divaldo Bross</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #333; /* Fundo mais escuro para combinar com o estoque */
+            font-family: 'Press Start 2P', cursive;
+            color: white;
+            flex-direction: column;
+            text-align: center;
+            overflow: hidden;
+        }
+        #game-wrapper, #main-menu {
+             position: relative;
+             width: 800px;
+             height: 600px;
+        }
+        #main-menu {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #5a5a5a;
+            border: 5px solid #000;
+            border-radius: 10px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #menu-dialog {
+            background-color: white;
+            color: black;
+            padding: 30px;
+            border-radius: 15px;
+            border: 4px solid black;
+            text-align: center;
+            max-width: 80%;
+            font-size: 1.5rem;
+            line-height: 2.5rem;
+            position: relative;
+            margin-bottom: 30px;
+        }
+        #menu-dialog::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 20px 20px 0 20px;
+            border-style: solid;
+            border-color: white transparent transparent transparent;
+        }
+        #start-button {
+            padding: 20px 40px;
+            font-size: 1.5rem;
+            font-family: 'Press Start 2P', cursive;
+            background-color: #4CAF50;
+            color: white;
+            border: 4px solid black;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #1a791e;
+            transition: all 0.1s ease;
+        }
+        #start-button:active {
+            transform: translateY(6px);
+            box-shadow: none;
+        }
+
+        #gameContainer {
+            border: 5px solid #000;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            position: relative;
+            width: 800px;
+            height: 600px;
+            overflow: hidden; /* Garante que nada saia do container */
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            background: #5a5a5a;
+            border-radius: 5px;
+            width: 100%;
+            height: 100%;
+        }
+        h1 {
+            font-size: 2.5rem;
+            text-shadow: 3px 3px 0px #000;
+            margin-bottom: 10px;
+        }
+        #ui-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 800px;
+            padding: 10px 20px;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        #score, #deliveries-info, #timer {
+            font-size: 1.2rem;
+            text-shadow: 2px 2px 0px #000;
+        }
+        #message-box, #pause-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            text-align: center;
+            z-index: 100;
+            display: none;
+            border: 4px solid white;
+            text-shadow: 3px 3px 0px #ff6347;
+            width: 80%;
+        }
+        #pause-overlay {
+            width: 100%;
+            height: 100%;
+            border-radius: 5px;
+            font-size: 4rem;
+            text-shadow: 4px 4px 0px #000;
+        }
+        #message-box button {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 1rem;
+            font-family: 'Press Start 2P', cursive;
+            background-color: #4CAF50;
+            color: white;
+            border: 3px solid black;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #1a791e;
+        }
+        #dialogue-box {
+            position: absolute;
+            background-color: white;
+            color: black;
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid black;
+            font-size: 0.8rem;
+            z-index: 50;
+            display: none;
+            max-width: 200px;
+        }
+        #pause-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(0,0,0,0.5);
+            border: 3px solid white;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            line-height: 1;
+            border-radius: 50%;
+            z-index: 101;
+            cursor: pointer;
+        }
+        #pause-btn:active {
+            background-color: rgba(0,0,0,0.7);
+        }
+        #mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            z-index: 50;
+            padding: 0 20px;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.4);
+            border: 3px solid rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            color: white;
+            text-shadow: 2px 2px 2px black;
+        }
+        .control-btn:active { background: rgba(255, 255, 255, 0.7); }
+        #jump-btn { width: 100px; height: 100px; }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    
+    <h1 class="hidden">Divaldo Bross</h1>
+    <div id="ui-container" class="hidden">
+        <div id="score">Pontos: 0</div>
+        <div id="deliveries-info">Equipamentos: 0</div>
+        <div id="timer">Tempo: 02:00</div>
+    </div>
+
+    <div id="game-wrapper">
+        <div id="main-menu">
+            <div id="menu-dialog">
+                <p>"Vamos lá para mais um dia de trabalho, tenho que coletar as caixas para entregar aos técnico"</p>
+            </div>
+            <button id="start-button">Iniciar</button>
+        </div>
+
+        <div id="gameContainer" class="hidden">
+            <canvas id="gameCanvas"></canvas>
+            <div id="dialogue-box"></div>
+            <div id="pause-overlay" class="hidden"><p>PAUSADO</p></div>
+            <button id="pause-btn" class="hidden">||</button>
+            <div id="message-box">
+                <p id="message-text"></p>
+                <button id="restart-button">Jogar Novamente</button>
+            </div>
+            <div id="mobile-controls">
+                <div style="display: flex; gap: 20px;">
+                    <button id="left-btn" class="control-btn">◀</button>
+                    <button id="right-btn" class="control-btn">▶</button>
+                </div>
+                <button id="jump-btn" class="control-btn">▲</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 800;
+        canvas.height = 600;
+
+        const scoreEl = document.getElementById('score');
+        const deliveriesInfoEl = document.getElementById('deliveries-info');
+        const timerEl = document.getElementById('timer');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+        const restartButton = document.getElementById('restart-button');
+        const dialogueBox = document.getElementById('dialogue-box');
+        const pauseBtn = document.getElementById('pause-btn');
+        const pauseOverlay = document.getElementById('pause-overlay');
+
+        const mainMenu = document.getElementById('main-menu');
+        const startButton = document.getElementById('start-button');
+        const gameContainer = document.getElementById('gameContainer');
+        const gameTitle = document.querySelector('h1');
+        const uiContainer = document.getElementById('ui-container');
+
+        const GRAVITY = 0.6;
+        const JUMP_FORCE = 15;
+        const BASE_PLAYER_SPEED = 6;
+        const TIME_LIMIT = 120;
+
+        let currentPlayerSpeed = BASE_PLAYER_SPEED;
+        let player, platforms, equipments;
+        let score = 0, equipmentCollected = 0, gameOver = false, isPaused = false, timeLeft, timerInterval;
+        let lastPlatformY, lastPlatformX;
+        let cameraY = 0;
+        
+        const keys = { right: { pressed: false }, left: { pressed: false } };
+
+        const playerImageRight = new Image();
+        const playerImageLeft = new Image();
+        const playerImageJumpRight = new Image();
+        const playerImageJumpLeft = new Image();
+        let imagesLoaded = 0;
+        const totalImages = 4;
+        let allImagesLoaded = false;
+        
+        let audioReady = false;
+        let jumpSound, runSound;
+        let runStepCounter = 0;
+        
+        function onImageLoad() {
+            imagesLoaded++;
+            if (imagesLoaded === totalImages) allImagesLoaded = true;
+        }
+
+        function onImageError(e) {
+             console.error("Erro ao carregar a imagem do personagem:", e.target.src);
+             mainMenu.innerHTML = `<p style="color: red; font-size: 1rem;">Erro fatal: Uma das artes do personagem não pôde ser carregada. Verifique o link ou sua conexão.</p>`;
+        }
+        
+        playerImageRight.onload = onImageLoad;
+        playerImageLeft.onload = onImageLoad;
+        playerImageJumpRight.onload = onImageLoad;
+        playerImageJumpLeft.onload = onImageLoad;
+
+        playerImageRight.onerror = onImageError;
+        playerImageLeft.onerror = onImageError;
+        playerImageJumpRight.onerror = onImageError;
+        playerImageJumpLeft.onerror = onImageError;
+
+        playerImageRight.src = 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo%20estatico.png';
+        playerImageLeft.src = 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo%20estatico%202.png';
+        playerImageJumpRight.src = 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo%20pulo%20dir.png';
+        playerImageJumpLeft.src = 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo%20pulo%20esq.png';
+
+        function setupAudio() {
+            if (audioReady) return;
+            jumpSound = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.2 } }).toDestination();
+            runSound = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 } }).toDestination();
+            audioReady = true;
+        }
+        
+        function startAudio() {
+            if (Tone.context.state !== 'running') Tone.start().then(setupAudio);
+        }
+
+        class Player {
+            constructor() {
+                this.position = { x: canvas.width / 2 - 30, y: 475 };
+                this.velocity = { x: 0, y: 0 };
+                this.width = 60; 
+                this.height = 75;
+                this.onGround = true;
+                this.direction = 'right';
+            }
+            draw() { if (allImagesLoaded) { let imageToDraw; if (this.onGround) { imageToDraw = this.direction === 'right' ? playerImageRight : playerImageLeft; } else { imageToDraw = this.direction === 'right' ? playerImageJumpRight : playerImageJumpLeft; } ctx.drawImage(imageToDraw, this.position.x, this.position.y, this.width, this.height); } }
+            update() { this.draw(); this.position.x += this.velocity.x; this.position.y += this.velocity.y; this.velocity.y += GRAVITY; this.onGround = false; }
+        }
+        class Platform {
+             constructor({ x, y, width = 200, height = 20 }) { this.position = { x, y }; this.width = width; this.height = height; }
+            draw() { ctx.fillStyle = '#d2691e'; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(this.position.x, this.position.y, this.width, this.height); }
+        }
+        
+        class Equipment {
+            constructor({ x, y, type }) { this.position = { x, y }; this.width = 35; this.height = 35; this.type = type; this.collected = false; }
+            draw() { if (this.collected) return; ctx.save(); switch (this.type) { case 'ont': ctx.fillStyle = '#a52a2a'; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); ctx.fillStyle = '#ffd700'; ctx.fillRect(this.position.x, this.position.y + 12, this.width, 10); ctx.fillRect(this.position.x + 12, this.position.y, 10, this.height); ctx.fillStyle = '#fff'; ctx.font = '10px "Press Start 2P"'; ctx.fillText("ONT", this.position.x + 4, this.position.y + 22); break; case 'box': ctx.fillStyle = '#D2B48C'; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); ctx.strokeStyle = '#8B4513'; ctx.lineWidth = 2; ctx.strokeRect(this.position.x, this.position.y, this.width, this.height); ctx.beginPath(); ctx.moveTo(this.position.x, this.position.y + this.height / 2); ctx.lineTo(this.position.x + this.width, this.position.y + this.height / 2); ctx.stroke(); break; case 'spool': ctx.fillStyle = '#C0C0C0'; ctx.beginPath(); ctx.arc(this.position.x + this.width / 2, this.position.y + this.height / 2, this.width / 2, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#0000FF'; ctx.beginPath(); ctx.arc(this.position.x + this.width / 2, this.position.y + this.height / 2, this.width / 4, 0, Math.PI * 2); ctx.fill(); break; } ctx.restore(); }
+        }
+        
+        function drawBackground() {
+            const bgHeight = 150;
+            const screenTop = cameraY;
+            const firstFloorIndex = Math.floor(screenTop / bgHeight);
+            for (let i = firstFloorIndex - 2; i < firstFloorIndex + 6; i++) {
+                const yPos = i * bgHeight;
+                ctx.fillStyle = '#888';
+                ctx.fillRect(0, yPos, canvas.width, 10);
+                ctx.fillStyle = '#a0522d';
+                ctx.fillRect(100, yPos + 100, 80, 50);
+                ctx.fillRect(400, yPos + 100, 80, 50);
+                ctx.fillRect(700, yPos + 100, 80, 50);
+            }
+        }
+
+        function startGame() { if (!allImagesLoaded) return; mainMenu.classList.add('hidden'); gameContainer.classList.remove('hidden'); gameTitle.classList.remove('hidden'); uiContainer.classList.remove('hidden'); pauseBtn.classList.remove('hidden'); init(); }
+        function restartGame() { startAudio(); init(); }
+
+        function init() {
+            gameOver = false;
+            isPaused = false;
+            score = 0;
+            equipmentCollected = 0;
+            currentPlayerSpeed = BASE_PLAYER_SPEED;
+            player = new Player();
+            platforms = [];
+            equipments = [];
+            cameraY = 0;
+            
+            const firstPlatform = new Platform({ x: canvas.width / 2 - 150, y: 550, width: 300, height: 20 });
+            platforms.push(firstPlatform);
+            lastPlatformY = firstPlatform.position.y;
+            lastPlatformX = firstPlatform.position.x;
+            
+            for (let i = 0; i < 20; i++) generatePlatform();
+
+            timeLeft = TIME_LIMIT;
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+            
+            updateUI();
+            messageBox.style.display = 'none';
+            pauseOverlay.classList.add('hidden');
+            animate();
+        }
+
+        function generatePlatform() {
+            const verticalGap = Math.random() * 50 + 70;
+            const newY = lastPlatformY - verticalGap;
+            const horizontalOffset = (Math.random() - 0.5) * 300;
+            let newX = lastPlatformX + horizontalOffset;
+            newX = Math.max(0, Math.min(canvas.width - 200, newX));
+            const newPlatform = new Platform({ x: newX, y: newY });
+            platforms.push(newPlatform);
+            
+            if (Math.random() > 0.4) {
+                const types = ['ont', 'box', 'spool'];
+                const randomType = types[Math.floor(Math.random() * types.length)];
+                equipments.push(new Equipment({ x: newPlatform.position.x + newPlatform.width / 2 - 17, y: newPlatform.position.y - 35, type: randomType }));
+            }
+            lastPlatformY = newY;
+            lastPlatformX = newX;
+        }
+
+        function updateTimer() {
+            if (gameOver || isPaused) { return; }
+            timeLeft--;
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerEl.textContent = `Tempo: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            if (timeLeft <= 0) { 
+                showEndGameMessage(`Tempo Esgotado! <br><br> Equipamentos: ${equipmentCollected} <br> Pontos: ${score}`);
+            }
+        }
+        
+        function updateUI() { scoreEl.textContent = `Pontos: ${score}`; deliveriesInfoEl.textContent = `Equipamentos: ${equipmentCollected}`; }
+        function showDialogue(text, duration) { dialogueBox.textContent = text; dialogueBox.style.display = 'block'; setTimeout(() => { dialogueBox.style.display = 'none'; }, duration); }
+        function showEndGameMessage(message) { messageText.innerHTML = message; messageBox.style.display = 'flex'; gameOver = true; }
+
+        let animationFrameId;
+        function animate() {
+            animationFrameId = requestAnimationFrame(animate);
+            if (gameOver || isPaused) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            
+            // CORREÇÃO DEFINITIVA: Lógica da câmara
+            const cameraThreshold = canvas.height * 0.4;
+            // A câmara só deve mover-se para cima.
+            // O valor de `cameraY` representa a coordenada Y do topo da tela no mundo do jogo.
+            // À medida que o jogador sobe, o seu `player.position.y` diminui.
+            // A câmara deve segui-lo.
+            if (player.position.y < cameraY + cameraThreshold) {
+                cameraY = player.position.y - cameraThreshold;
+            }
+            ctx.translate(0, -cameraY);
+            
+            drawBackground();
+            
+            if ((keys.left.pressed || keys.right.pressed) && player.onGround && audioReady) { runStepCounter++; if (runStepCounter > 10) { runSound.triggerAttack(); runStepCounter = 0; } }
+            
+            player.velocity.x = 0;
+            if (keys.left.pressed) player.velocity.x = -currentPlayerSpeed;
+            if (keys.right.pressed) player.velocity.x = currentPlayerSpeed;
+            
+            platforms.forEach(p => p.draw());
+            equipments.forEach(e => e.draw());
+            player.update();
+            
+            platforms.forEach(platform => { if (player.velocity.y > 0 && player.position.y + player.height <= platform.position.y + 1 && player.position.y + player.height + player.velocity.y >= platform.position.y && player.position.x + player.width > platform.position.x && player.position.x < platform.position.x + platform.width) { player.velocity.y = 0; player.position.y = platform.position.y - player.height; player.onGround = true; } });
+            
+            equipments.forEach((item) => { 
+                if (item && !item.collected && player.position.x < item.position.x + item.width && player.position.x + player.width > item.position.x && player.position.y < item.position.y + item.height && player.position.y + player.height > item.position.y) { 
+                    item.collected = true; 
+                    score += 100; 
+                    equipmentCollected++; 
+                    updateUI();
+                } 
+            });
+            
+            // O jogador perde se cair para fora da parte inferior do ecrã visível pela câmara.
+            if (player.position.y > cameraY + canvas.height) { showEndGameMessage(`Fim de Jogo! <br><br> Divaldo deixou o equipamento cair.`); }
+
+            // CORREÇÃO DEFINITIVA: Geração e limpeza de plataformas
+            // Gera mais plataformas quando a última plataforma gerada estiver prestes a entrar no ecrã.
+            while (lastPlatformY > cameraY - 100) {
+                generatePlatform();
+            }
+            
+            // Remove as plataformas e itens que já estão muito abaixo do ecrã.
+            platforms = platforms.filter(p => p.position.y < cameraY + canvas.height + 200);
+            equipments = equipments.filter(e => e.position.y < cameraY + canvas.height + 200);
+
+            ctx.restore();
+        }
+
+        function handleJump() { if (player.onGround) { player.onGround = false; player.velocity.y = -JUMP_FORCE; if (audioReady) jumpSound.triggerAttackRelease('G4', '8n'); } }
+        
+        function togglePause() {
+            if (gameOver) return;
+            isPaused = !isPaused;
+            if (isPaused) {
+                pauseOverlay.classList.remove('hidden');
+                clearInterval(timerInterval); // Pausa o timer
+            } else {
+                pauseOverlay.classList.add('hidden');
+                // Retoma o timer e o jogo
+                timeLeft++;
+                updateTimer();
+                timerInterval = setInterval(updateTimer, 1000);
+                animate();
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyP') {
+                togglePause();
+                return;
+            }
+            if (gameOver) { if (e.code === 'Enter') { restartGame(); } return; }
+            if (isPaused) return;
+
+            startAudio(); 
+            switch (e.code) { 
+                case 'KeyA': case 'ArrowLeft': keys.left.pressed = true; player.direction = 'left'; break; 
+                case 'KeyD': case 'ArrowRight': keys.right.pressed = true; player.direction = 'right'; break; 
+                case 'KeyW': case 'ArrowUp': case 'Space': handleJump(); break; 
+            } 
+        });
+        
+        window.addEventListener('keyup', (e) => { switch (e.code) { case 'KeyA': case 'ArrowLeft': keys.left.pressed = false; break; case 'KeyD': case 'ArrowRight': keys.right.pressed = false; break; } });
+
+        const leftBtn = document.getElementById('left-btn'), rightBtn = document.getElementById('right-btn'), jumpBtn = document.getElementById('jump-btn');
+        function handleTouch(e, key, isPressed) { e.preventDefault(); if (gameOver || isPaused) return; startAudio(); keys[key].pressed = isPressed; if(player) player.direction = key; }
+        leftBtn.addEventListener('touchstart', (e) => handleTouch(e, 'left', true));
+        leftBtn.addEventListener('touchend', (e) => handleTouch(e, 'left', false));
+        rightBtn.addEventListener('touchstart', (e) => handleTouch(e, 'right', true));
+        rightBtn.addEventListener('touchend', (e) => handleTouch(e, 'right', false));
+        jumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); if (gameOver || isPaused) return; startAudio(); handleJump(); });
+        
+        restartButton.addEventListener('click', restartGame);
+        startButton.addEventListener('click', startGame);
+        pauseBtn.addEventListener('click', togglePause);
+
+    </script>
+</body>
+</html>
+
