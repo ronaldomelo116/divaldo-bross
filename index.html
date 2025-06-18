@@ -65,7 +65,13 @@
             box-sizing: border-box;
             z-index: 200;
         }
-        
+        #game-title {
+			font-size: 2rem;
+			text-shadow: 3px 3px 0px #000;
+			color: white;
+			margin-bottom: 30px;
+			text-align: center;
+        }
         #ranking-screen h2 {
             font-size: 2rem;
             text-shadow: 3px 3px 0 #000;
@@ -224,7 +230,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 10px;
+            margin-top: -10px;
+			margin-bottom: 50px;
             padding: 0 10px;
             box-sizing: border-box;
             user-select: none;
@@ -251,6 +258,36 @@
         }
 
         .hidden { display: none !important; }
+		
+		#credits {
+			position: absolute;
+			bottom: 20px;
+			text-align: center;
+			font-size: 0.75rem;
+			color: white;
+			opacity: 0.8;
+		}
+
+		#credits span {
+			display: block;
+			margin-bottom: 4px;
+			font-size: 0.8rem;
+			color: #ffffffcc;
+		}
+
+		#credits a {
+			color: #fff;
+			text-decoration: none;
+			transition: color 0.3s ease, text-shadow 0.3s ease;
+		}
+
+		#credits a:hover {
+			color: #4CAF50;
+			text-shadow: 1px 1px 2px #000;
+		}
+
+
+		
     </style>
 </head>
 <body>
@@ -265,8 +302,14 @@
 
         <div id="game-area">
             <div id="main-menu">
+                <h1 id="game-title">DIVALDO BROSS</h1>
                 <button id="start-button">Iniciar</button>
                 <button id="ranking-button">Ranking</button>
+				
+			<div id="credits">
+				<span>Criação:</span>
+				<a href="https://www.instagram.com/ronalldo.mello/" target="_blank">@ronalldo.mello</a>
+				</div>
             </div>
             
             <div id="ranking-screen" class="hidden">
@@ -290,6 +333,7 @@
                         <button id="save-score-btn">Salvar</button>
                     </div>
                     <button id="restart-button">Jogar Novamente</button>
+					<button id="endgame-menu-btn">Menu Principal</button>
                 </div>
             </div>
         </div>
@@ -330,7 +374,7 @@
         
         async function getScores() {
             const rankingCol = collection(db, "ranking");
-            const q = query(rankingCol, orderBy("score", "desc"), limit(5));
+            const q = query(rankingCol, orderBy("score", "desc"), limit(10));
             const rankingSnapshot = await getDocs(q);
             const scores = [];
             rankingSnapshot.forEach((doc) => {
@@ -372,6 +416,7 @@
         const messageBox = document.getElementById('message-box');
         const messageText = document.getElementById('message-text');
         const restartButton = document.getElementById('restart-button');
+		const endgameMenuBtn = document.getElementById('endgame-menu-btn');
         const pauseBtn = document.getElementById('pause-btn');
         const pauseOverlay = document.getElementById('pause-overlay');
         const resumeBtn = document.getElementById('resume-btn');
@@ -400,9 +445,16 @@
         let currentPlayerSpeed = BASE_PLAYER_SPEED;
         let player, platforms, equipments;
         let score = 0, equipmentCollected = 0, gameOver = false, isPaused = false, timeLeft, timerInterval;
-        let lastPlatformY, lastPlatformX;
+        let floatingTexts = [];
+		let lastPlatformY, lastPlatformX;
         let cameraY = 0;
-        
+		
+        const itemScores = {
+		ont: 200,       // Caixa Fiberhome
+		box: 150,       // Roteador
+		spool: 100      // Bobina de drop
+		};
+
         const keys = { right: { pressed: false }, left: { pressed: false } };
 
         const images = {};
@@ -418,10 +470,11 @@
             playerJumpRight: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo%20pulo%20dir.png',
             playerJumpLeft: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo%20pulo%20esq.png',
             spool: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/bobina%20de%20drop%20pixel%20art.png',
-            platform: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/plataforma.png',
+            platform: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/plataforma01.png',
             bgBoxes: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/palete%20com%20caixas.png',
-            ont: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/caixa%20fiber.png'
-        };
+            ont: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/caixa%20fiber.png',
+			router: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/ROTEADOR.png', // ATUALIZAÇÃO: Nova imagem para 'box'
+		};
         let imagesLoadedCount = 0;
         const totalImages = Object.keys(imageSources).length;
         let allImagesLoaded = false;
@@ -504,7 +557,11 @@
                 this.width = (type === 'ont') ? 45 : 35;
                 this.height = (type === 'ont') ? 45 : 35;
             }
-            draw() { if (this.collected) return; switch (this.type) { case 'ont': if(allImagesLoaded) {ctx.drawImage(images.ont, this.position.x, this.position.y, this.width, this.height); } break; case 'box': ctx.fillStyle = '#D2B48C'; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); ctx.strokeStyle = '#8B4513'; ctx.lineWidth = 2; ctx.strokeRect(this.position.x, this.position.y, this.width, this.height); break; case 'spool': if (allImagesLoaded) { ctx.drawImage(images.spool, this.position.x, this.position.y, this.width, this.height); } break; } }
+            draw() { if (this.collected) return; 
+			switch (this.type) { 
+			case 'ont': if(allImagesLoaded) {ctx.drawImage(images.ont, this.position.x, this.position.y, this.width, this.height); } break; 
+            case 'box': if(allImagesLoaded) { ctx.drawImage(images.router, this.position.x, this.position.y, this.width, this.height); } break; // ATUALIZAÇÃO
+			case 'spool': if (allImagesLoaded) { ctx.drawImage(images.spool, this.position.x, this.position.y, this.width, this.height); } break; } }
         }
         
         function drawBackground() {
@@ -568,7 +625,25 @@
             }
             messageBox.classList.remove('hidden');
         }
-        
+        //animação de pontos subindo
+		function drawFloatingTexts() {
+		// Remove textos que já sumiram 
+		floatingTexts = floatingTexts.filter(t => t.opacity > 0);
+
+		// Desenha os textos restantes
+		floatingTexts.forEach(text => {
+			ctx.save();
+			ctx.globalAlpha = text.opacity; // Transparência
+			ctx.fillStyle = text.color;     // Cor (verde)
+			ctx.font = 'bold 16px Arial';   // Fonte
+			ctx.fillText(text.text, text.x, text.y);
+			ctx.restore();
+
+        // Faz o texto subir e sumir
+        text.y -= 0.5;
+        text.opacity -= 0.01;
+			});
+		}
         let animationFrameId;
         function animate() {
             animationFrameId = requestAnimationFrame(animate);
@@ -594,12 +669,24 @@
             
             player.onGround = false;
             platforms.forEach(platform => {
-                if ( player.velocity.y >= 0 && player.position.y + player.height <= platform.position.y && player.position.y + player.height + player.velocity.y >= platform.position.y && player.position.x + player.width > platform.position.x && player.position.x < platform.position.x + platform.width) {
-                    player.velocity.y = 0;
-                    player.position.y = platform.position.y - player.height;
-                    player.onGround = true;
-                }
-            });
+			const nextBottom = player.position.y + player.height + player.velocity.y;
+			const platformTop = platform.position.y;
+
+			const isFalling = player.velocity.y >= 0;
+			const withinXRange =
+			player.position.x + player.width > platform.position.x &&
+			player.position.x < platform.position.x + platform.width;
+
+			const willCollide =
+			player.position.y + player.height <= platformTop &&
+			nextBottom >= platformTop;
+
+			if (isFalling && withinXRange && willCollide) {
+			player.velocity.y = 0;
+			player.position.y = platform.position.y - player.height;
+			player.onGround = true;
+			}
+});
 
             platforms.forEach(p => p.draw());
             equipments.forEach(e => e.draw());
@@ -608,9 +695,21 @@
             equipments.forEach((item) => { 
                 if (item && !item.collected && player.position.x < item.position.x + item.width && player.position.x + player.width > item.position.x && player.position.y < item.position.y + item.height && player.position.y + player.height > item.position.y) { 
                     item.collected = true; 
-                    score += 100; 
-                    equipmentCollected++; 
-                    updateUI();
+                    const itemValue = itemScores[item.type] || 100; // valor padrão se não encontrar
+					score += itemValue;
+					equipmentCollected++; 
+					updateUI();
+
+					// Adiciona um texto flutuante quando pega o item
+					floatingTexts.push({
+					text: `+${itemValue}`,
+					x: item.position.x,
+					y: item.position.y - 10,
+					opacity: 1,
+					color: '#00FF00' // Verde
+			});
+
+
                 } 
             });
             
@@ -622,7 +721,7 @@
 
             platforms = platforms.filter(p => p.position.y < cameraY + canvas.height + 200);
             equipments = equipments.filter(e => e.position.y < cameraY + canvas.height + 200);
-
+			drawFloatingTexts();
             ctx.restore();
         }
 
@@ -715,6 +814,19 @@
         }
 
         restartButton.addEventListener('click', restartGame);
+		endgameMenuBtn.addEventListener('click', () => {
+		gameOver = true;
+		clearInterval(timerInterval);
+		cancelAnimationFrame(animationFrameId);
+
+		messageBox.classList.add('hidden');
+		mainMenu.classList.remove('hidden');
+		gameContainer.classList.add('hidden');
+		uiContainer.classList.add('hidden');
+		pauseBtn.classList.add('hidden');
+		mobileControls.classList.add('hidden');
+});
+
         startButton.addEventListener('click', startGame);
         pauseBtn.addEventListener('click', togglePause);
         window.addEventListener('resize', resizeCanvas);
