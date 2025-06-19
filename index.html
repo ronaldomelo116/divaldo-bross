@@ -452,28 +452,35 @@
         const itemScores = {
 		ont: 200,       // Caixa Fiberhome
 		box: 150,       // Roteador
-		spool: 100      // Bobina de drop
+		spool: 100,      // Bobina de drop
+		cake: 500,   	//  Bolo vale 500 pontos
+		coffee: 500		//café
 		};
 
         const keys = { right: { pressed: false }, left: { pressed: false } };
 
         const images = {};
-        const imageSources = {
-            playerIdleRight: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo%20estatico.png',
-            playerIdleLeft: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo%20estatico%202.png',
+        const cakeChance = 0.05;
+		const coffeeChance = 0.05;
+
+const imageSources = {
+            playerIdleRight: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo-dir-p.png',
+            playerIdleLeft: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo-esq-p.png',
             playerWalkRight1: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/main/Divaldo%20Bross/img/divaldo-correndo%20dir/D%20frame-1.png',
             playerWalkRight2: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/main/Divaldo%20Bross/img/divaldo-correndo%20dir/D%20frame-2.png',
             playerWalkRight3: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/main/Divaldo%20Bross/img/divaldo-correndo%20dir/D%20frame-3.png',
             playerWalkLeft1: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo-correndo-esq/E%20frame-1.png',
             playerWalkLeft2: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo-correndo-esq/E%20frame-2.png',
             playerWalkLeft3: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo-correndo-esq/E%20frame-3.png',
-            playerJumpRight: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo%20pulo%20dir.png',
-            playerJumpLeft: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo%20pulo%20esq.png',
+            playerJumpRight: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo-pulo-dir.png',
+            playerJumpLeft: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/divaldo-pulo-esq.png',
             spool: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/bobina%20de%20drop%20pixel%20art.png',
             platform: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/plataforma01.png',
             bgBoxes: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/palete%20com%20caixas.png',
             ont: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/caixa%20fiber.png',
 			router: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/ROTEADOR.png', // ATUALIZAÇÃO: Nova imagem para 'box'
+			cake: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/bolo%20da%20moça.png',
+			coffee: 'https://raw.githubusercontent.com/ronaldomelo116/divaldo-bross/refs/heads/main/Divaldo%20Bross/img/café.png',
 		};
         let imagesLoadedCount = 0;
         const totalImages = Object.keys(imageSources).length;
@@ -496,10 +503,10 @@
             canvas.width = gameContainer.clientWidth;
             canvas.height = gameContainer.clientHeight;
         }
-
+			//ajuste da altura do personagem perto da plataforma 
         class Player {
             constructor() {
-                this.position = { x: canvas.width / 2 - 30, y: canvas.height - 125 };
+                this.position = { x: canvas.width / 2 - 30, y: canvas.height - 115 };
                 this.velocity = { x: 0, y: 0 };
                 this.width = 60; 
                 this.height = 75;
@@ -511,24 +518,31 @@
             }
             
             draw() {
-                if (!allImagesLoaded) return;
-                
-                let imageToDraw;
-                const isRunning = this.onGround && (keys.left.pressed || keys.right.pressed);
+				if (!allImagesLoaded) return;
 
-                if (isRunning) {
-                    const walkFrames = this.direction === 'right' ? 
-                        [images.playerWalkRight1, images.playerWalkRight2, images.playerWalkRight3] : 
-                        [images.playerWalkLeft1, images.playerWalkLeft2, images.playerWalkLeft3];
-                    imageToDraw = walkFrames[this.currentFrame];
-                } else if (!this.onGround) {
-                    imageToDraw = this.direction === 'right' ? images.playerJumpRight : images.playerJumpLeft;
-                } else {
-                    imageToDraw = this.direction === 'right' ? images.playerIdleRight : images.playerIdleLeft;
-                }
-                
-                ctx.drawImage(imageToDraw, this.position.x, this.position.y, this.width, this.height);
-            }
+				let imageToDraw;
+				const isRunning = this.onGround && (keys.left.pressed || keys.right.pressed);
+				const isStanding = !isRunning && this.onGround;
+				const isJumping = !this.onGround;
+
+				// Escolhe a imagem correta
+				if (isRunning) {
+				const walkFrames = this.direction === 'right' ?
+				[images.playerWalkRight1, images.playerWalkRight2, images.playerWalkRight3] :
+				[images.playerWalkLeft1, images.playerWalkLeft2, images.playerWalkLeft3];
+			imageToDraw = walkFrames[this.currentFrame];
+				} else if (isJumping) {
+				imageToDraw = this.direction === 'right' ? images.playerJumpRight : images.playerJumpLeft;
+				} else {
+				imageToDraw = this.direction === 'right' ? images.playerIdleRight : images.playerIdleLeft;
+				}
+
+				// Ajustes de largura por estado
+				const drawWidth = isStanding ? 40 : isJumping ? 50 : this.width;
+				const drawX = this.position.x + (this.width - drawWidth) / 2;
+
+				ctx.drawImage(imageToDraw, drawX, this.position.y, drawWidth, this.height);
+				}
 
             update() {
                 if (this.onGround && (keys.left.pressed || keys.right.pressed)) {
@@ -544,6 +558,10 @@
                 this.position.x += this.velocity.x;
                 this.position.y += this.velocity.y;
                 this.velocity.y += GRAVITY;
+				
+				// 💡 Aqui entra o limite de velocidade de queda
+				this.velocity.y = Math.min(this.velocity.y, 25);
+				
             }
         }
         class Platform {
@@ -556,12 +574,17 @@
                 this.position = { x, y }; this.type = type; this.collected = false;
                 this.width = (type === 'ont') ? 45 : 35;
                 this.height = (type === 'ont') ? 45 : 35;
+				this.width = (type === 'spool') ? 45 : 35;
+                this.height = (type === 'spool') ? 45 : 35;
             }
             draw() { if (this.collected) return; 
 			switch (this.type) { 
 			case 'ont': if(allImagesLoaded) {ctx.drawImage(images.ont, this.position.x, this.position.y, this.width, this.height); } break; 
             case 'box': if(allImagesLoaded) { ctx.drawImage(images.router, this.position.x, this.position.y, this.width, this.height); } break; // ATUALIZAÇÃO
-			case 'spool': if (allImagesLoaded) { ctx.drawImage(images.spool, this.position.x, this.position.y, this.width, this.height); } break; } }
+			case 'spool': if (allImagesLoaded) { ctx.drawImage(images.spool, this.position.x, this.position.y, this.width, this.height); } break;  
+			case 'cake': if (allImagesLoaded) { ctx.drawImage(images.cake, this.position.x, this.position.y, this.width, this.height); } break;
+			case 'coffee': if (allImagesLoaded) { ctx.drawImage(images.coffee, this.position.x, this.position.y, this.width, this.height); } break; }
+			}
         }
         
         function drawBackground() {
@@ -598,7 +621,25 @@
         
         function generatePlatform() {
             const verticalGap = Math.random() * 50 + 70; const newY = lastPlatformY - verticalGap; const horizontalOffset = (Math.random() - 0.5) * (canvas.width * 0.7); let newX = lastPlatformX + horizontalOffset; const platformWidth = canvas.width * 0.3 + Math.random() * 50; newX = Math.max(0, Math.min(canvas.width - platformWidth, newX)); const newPlatform = new Platform({ x: newX, y: newY, width: platformWidth }); platforms.push(newPlatform);
-            if (Math.random() > 0.4) { const types = ['ont', 'box', 'spool']; const randomType = types[Math.floor(Math.random() * types.length)]; let itemHeight = (randomType === 'ont') ? 45 : 35; let itemY = newPlatform.position.y - itemHeight; equipments.push(new Equipment({ x: newPlatform.position.x + newPlatform.width / 2 - 17, y: itemY, type: randomType }));}
+            if (Math.random() > 0.4) { let randomType;
+const randomChance = Math.random();
+
+if (randomChance < cakeChance) {
+    randomType = 'cake';
+	} 	else if (randomChance < cakeChance + coffeeChance) {
+    randomType = 'coffee';
+	} 	else {
+		const commonTypes = ['ont', 'box', 'spool'];
+    randomType = commonTypes[Math.floor(Math.random() * commonTypes.length)];
+	} 	let itemHeight = (randomType === 'ont') ? 45 : 35; 
+		let itemYOffset = 0;
+		if (randomType === 'ont') {
+		itemYOffset = 9; // ajuste da ont
+		} else if (randomType === 'spool') {
+		itemYOffset = -3; // ajuste da bobina (mais baixo)
+		}
+
+		let itemY = newPlatform.position.y - itemHeight + itemYOffset; equipments.push(new Equipment({ x: newPlatform.position.x + newPlatform.width / 2 - 17, y: itemY, type: randomType }));}
             lastPlatformY = newY; lastPlatformX = newX;
         }
 
@@ -652,10 +693,15 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.save();
             
-            const scrollThreshold = canvas.height * 0.4;
-            if (player.position.y < cameraY + scrollThreshold) {
-                cameraY = player.position.y - scrollThreshold;
-            }
+            const upperScrollThreshold = canvas.height * 0.4;
+			const lowerScrollThreshold = canvas.height * 0.6;
+
+			if (player.position.y < cameraY + upperScrollThreshold) {
+			cameraY = player.position.y - upperScrollThreshold;
+			} else if (player.position.y > cameraY + lowerScrollThreshold) {
+			cameraY = player.position.y - lowerScrollThreshold;
+			}
+
 
             ctx.translate(0, -cameraY);
             
@@ -671,22 +717,24 @@
             platforms.forEach(platform => {
 			const nextBottom = player.position.y + player.height + player.velocity.y;
 			const platformTop = platform.position.y;
+			const platformBottom = platform.position.y + platform.height;
 
 			const isFalling = player.velocity.y >= 0;
 			const withinXRange =
 			player.position.x + player.width > platform.position.x &&
 			player.position.x < platform.position.x + platform.width;
 
-			const willCollide =
-			player.position.y + player.height <= platformTop &&
-			nextBottom >= platformTop;
+			// Novo: margem de segurança (altura máxima que ele pode atravessar)
+			const maxStep = player.velocity.y + 1;
 
-			if (isFalling && withinXRange && willCollide) {
+			const closeEnough = nextBottom >= platformTop && player.position.y + player.height <= platformTop + 10;
+
+			if (isFalling && withinXRange && closeEnough) {
 			player.velocity.y = 0;
-			player.position.y = platform.position.y - player.height;
+			player.position.y = platformTop - player.height;
 			player.onGround = true;
 			}
-});
+			});
 
             platforms.forEach(p => p.draw());
             equipments.forEach(e => e.draw());
@@ -714,10 +762,18 @@
             });
             
             if (player.position.y > cameraY + canvas.height) { showEndGameMessage(`Fim de Jogo!`); }
+			// Fim de jogo se o jogador estiver abaixo da última plataforma visível
+			const lowestPlatform = platforms.reduce((lowest, p) =>
+				p.position.y > lowest.position.y ? p : lowest, platforms[0]
+			);
 
-            while (lastPlatformY > cameraY - 100) {
-                generatePlatform();
-            }
+			if (player.position.y > lowestPlatform.position.y + 100) {
+				showEndGameMessage(`Fim de Jogo!`);
+			}
+
+            while (lastPlatformY > cameraY - canvas.height - 200) {
+			generatePlatform();
+			}
 
             platforms = platforms.filter(p => p.position.y < cameraY + canvas.height + 200);
             equipments = equipments.filter(e => e.position.y < cameraY + canvas.height + 200);
